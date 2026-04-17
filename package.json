@@ -1,0 +1,1 @@
+{ "name": "creaciones-normita-pedidos", "version": "1.0.0", "description": "Gestor de pedidos para Creaciones Normita", "main": "index.js", "scripts": { "start": "node index.js" }, "dependencies": {} }
