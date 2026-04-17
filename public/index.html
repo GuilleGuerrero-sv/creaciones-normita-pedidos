@@ -1,2 +1,1123 @@
-<!DOCTYPE html> <html lang="es"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Gestor de Pedidos - Creaciones Normita</title> <style> * { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; color: #333; padding: 20px; } .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); } h1 { color: #2c3e50; margin-bottom: 30px; text-align: center; font-size: 28px; } .tabs { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 30px; gap: 0; } .tab-btn { background: none; border: none; padding: 12px 20px; font-size: 14px; cursor: pointer; border-bottom: 3px solid transparent; color: #666; transition: all 0.3s; } .tab-btn.active { color: #0066cc; border-bottom-color: #0066cc; } .tab-btn:hover { color: #0066cc; } .tab-content { display: none; } .tab-content.active { display: block; } form { display: flex; flex-direction: column; gap: 15px; } .form-group { display: flex; flex-direction: column; } label { font-weight: 500; margin-bottom: 6px; font-size: 13px; color: #555; } input, select, textarea { padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; } input:focus, select:focus, textarea:focus { outline: none; border-color: #0066cc; box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1); } textarea { resize: vertical; min-height: 80px; } button { background: #0066cc; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: 500; transition: all 0.3s; } button:hover { background: #0052a3; } button:active { transform: scale(0.98); } .success-message { background: #d4edda; color: #155724; padding: 12px; border-radius: 6px; margin-bottom: 20px; display: none; } .error-message { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 6px; margin-bottom: 20px; display: none; } .orders-list { display: flex; flex-direction: column; gap: 15px; } .order-card { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px; } .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; } .order-id { font-weight: 600; font-size: 15px; } .order-status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; } .status-pending { background: #fff3cd; color: #856404; } .status-process { background: #d1ecf1; color: #0c5460; } .status-completed { background: #d4edda; color: #155724; } .status-delivered { background: #e2e3e5; color: #383d41; } .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; } .stat-card { background: #f0f7ff; border: 1px solid #0066cc; border-radius: 6px; padding: 20px; text-align: center; } .stat-label { font-size: 12px; color: #666; margin-bottom: 8px; } .stat-value { font-size: 28px; font-weight: 600; color: #0066cc; } .no-data { text-align: center; padding: 40px 20px; color: #999; } </style> </head> <body> <div class="container"> <h1>Gestor de Pedidos - Creaciones Normita</h1> <div class="tabs"> <button class="tab-btn active" onclick="switchTab('create')">Nuevo Pedido</button> <button class="tab-btn" onclick="switchTab('orders')">Mis Pedidos</button> <button class="tab-btn" onclick="switchTab('dashboard')">Resumen</button> </div> <!-- TAB: CREAR PEDIDO --> <div id="create" class="tab-content active"> <h2>Crear nuevo pedido</h2> <div class="success-message" id="successMsg">✅ Pedido creado exitosamente</div> <form id="pedidoForm"> <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"> <div class="form-group"> <label>Nombre del cliente</label> <input type="text" id="cliente" required placeholder="Ej: Tienda Central"> </div> <div class="form-group"> <label>Email cliente</label> <input type="email" id="emailCliente" placeholder="cliente@example.com"> </div> </div> <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"> <div class="form-group"> <label>Nombre del producto</label> <input type="text" id="producto" required placeholder="Ej: Vestido rojo"> </div> <div class="form-group"> <label>Descripción</label> <input type="text" id="descripcion" placeholder="Detalles adicionales"> </div> </div> <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;"> <div class="form-group"> <label>Cantidad</label> <input type="number" id="cantidad" required min="1" value="1"> </div> <div class="form-group"> <label>Precio unitario ($)</label> <input type="number" id="precioUnitario" required min="0" step="0.01"> </div> <div class="form-group"> <label>Fecha vencimiento</label> <input type="date" id="fechaVencimiento" required> </div> </div> <div class="form-group"> <label>Notas especiales</label> <textarea id="notas" placeholder="Instrucciones de confección, colores especiales, etc."></textarea> </div> <button type="submit">Crear Pedido</button> </form> </div> <!-- TAB: MIS PEDIDOS --> <div id="orders" class="tab-content"> <h2>Pedidos registrados</h2> <div class="orders-list" id="ordersList"> <div class="no-data">No hay pedidos aún</div> </div> </div> <!-- TAB: DASHBOARD --> <div id="dashboard" class="tab-content"> <h2>Resumen de actividad</h2> <div class="stats"> <div class="stat-card"> <div class="stat-label">Total de pedidos</div> <div class="stat-value" id="statTotal">0</div> </div> <div class="stat-card"> <div class="stat-label">En proceso</div> <div class="stat-value" id="statProcess">0</div> </div> <div class="stat-card"> <div class="stat-label">Terminados</div> <div class="stat-value" id="statCompleted">0</div> </div> <div class="stat-card"> <div class="stat-label">Entregados</div> <div class="stat-value" id="statDelivered">0</div> </div> </div> <h3>Ingresos totales: <span id="totalRevenue">$0</span></h3> </div> </div> <script> const STORAGE_KEY = 'pedidos_creaciones_normita'; function switchTab(tabName) { document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(tabName).classList.add('active'); event.target.classList.add('active'); if (tabName === 'orders') renderOrders(); if (tabName === 'dashboard') renderDashboard(); } function loadData() { const data = localStorage.getItem(STORAGE_KEY); return data ? JSON.parse(data) : []; } function saveData(pedidos) { localStorage.setItem(STORAGE_KEY, JSON.stringify(pedidos)); } function generateId() { return 'PED-' + Date.now().toString(36).toUpperCase(); } document.getElementById('pedidoForm').addEventListener('submit', function(e) { e.preventDefault(); const pedido = { id: generateId(), cliente: document.getElementById('cliente').value, email: document.getElementById('emailCliente').value, producto: document.getElementById('producto').value, descripcion: document.getElementById('descripcion').value, cantidad: parseInt(document.getElementById('cantidad').value), precioUnitario: parseFloat(document.getElementById('precioUnitario').value), total: parseInt(document.getElementById('cantidad').value) * parseFloat(document.getElementById('precioUnitario').value), fechaCreacion: new Date().toISOString().split('T')[0], fechaVencimiento: document.getElementById('fechaVencimiento').value, estado: 'pendiente', notas: document.getElementById('notas').value }; const pedidos = loadData(); pedidos.push(pedido); saveData(pedidos); this.reset(); document.getElementById('successMsg').style.display = 'block'; setTimeout(() => { document.getElementById('successMsg').style.display = 'none'; }, 3000); }); function renderOrders() { const pedidos = loadData(); const ordersList = document.getElementById('ordersList'); if (pedidos.length === 0) { ordersList.innerHTML = '<div class="no-data">No hay pedidos aún</div>'; return; } ordersList.innerHTML = pedidos.map(p => ` <div class="order-card"> <div class="order-header"> <span class="order-id">${p.id}</span> <select onchange="updateStatus('${p.id}', this.value)" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ddd;"> <option value="pendiente" ${p.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option> <option value="proceso" ${p.estado === 'proceso' ? 'selected' : ''}>En proceso</option> <option value="terminado" ${p.estado === 'terminado' ? 'selected' : ''}>Terminado</option> <option value="entregado" ${p.estado === 'entregado' ? 'selected' : ''}>Entregado</option> </select> </div> <p><strong>Cliente:</strong> ${p.cliente}</p> <p><strong>Producto:</strong> ${p.producto}</p> <p><strong>Cantidad:</strong> ${p.cantidad} | <strong>Total:</strong> $${p.total.toFixed(2)}</p> <button onclick="deletePedido('${p.id}')" style="background: #dc3545; margin-top: 10px;">Eliminar</button> </div> `).join(''); } function updateStatus(id, newStatus) { const pedidos = loadData(); const pedido = pedidos.find(p => p.id === id); if (pedido) { pedido.estado = newStatus; saveData(pedidos); renderOrders(); } } function deletePedido(id) { if (confirm('¿Estás seguro de que deseas eliminar este pedido?')) { const pedidos = loadData().filter(p => p.id !== id); saveData(pedidos); renderOrders(); } } function renderDashboard() { const pedidos = loadData(); const total = pedidos.length; const proceso = pedidos.filter(p => p.estado === 'proceso').length; const terminado = pedidos.filter(p => p.estado === 'terminado').length; const entregado = pedidos.filter(p => p.estado === 'entregado').length; const revenue = pedidos.reduce((sum, p) => sum + p.total, 0); document.getElementById('statTotal').textContent = total; document.getElementById('statProcess').textContent = proceso; document.getElementById('statCompleted').textContent = terminado; document.getElementById('statDelivered').textContent = entregado; document.getElementById('totalRevenue').textContent = '$' + revenue.toFixed(2); } </script> </body> </html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creaciones Normita - Gestor de Pedidos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #C2603A;
+    --brand-light: #F5EAE4;
+    --brand-dark: #8B3E22;
+    --bg: #FAF8F6;
+    --surface: #FFFFFF;
+    --border: #E8E2DC;
+    --text: #1A1208;
+    --text-muted: #7A6B5C;
+    --success: #2D6A4F;
+    --success-bg: #D8F3DC;
+    --warning: #8B5E00;
+    --warning-bg: #FFF3CD;
+    --info: #1A4F8C;
+    --info-bg: #DBE9FF;
+    --danger: #9B2226;
+    --danger-bg: #FDDDE0;
+    --purple: #5C3D9E;
+    --purple-bg: #EDE9FA;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--brand);
+    letter-spacing: -0.3px;
+  }
+  .logo span { color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400; display: block; margin-top: -2px; }
+
+  .sync-status {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sync-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #ccc;
+    transition: background 0.3s;
+  }
+  .sync-dot.connected { background: #2D6A4F; }
+  .sync-dot.error { background: var(--brand); }
+
+  /* ===== NAV TABS ===== */
+  .nav-tabs {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+  }
+  .nav-tabs-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    gap: 0;
+  }
+  .tab-btn {
+    padding: 14px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    border-bottom: 2.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--brand); border-bottom-color: var(--brand); }
+  .tab-btn .count {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--brand-light); color: var(--brand-dark);
+    font-size: 11px; font-weight: 600;
+    width: 18px; height: 18px; border-radius: 50%;
+    margin-left: 6px;
+  }
+
+  /* ===== MAIN ===== */
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ===== SECTION HEADER ===== */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .section-title { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--text); }
+  .section-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ===== FORM CARD ===== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .card-title {
+    font-size: 16px; font-weight: 600; color: var(--text);
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  input, select, textarea {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--brand);
+    background: white;
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237A6B5C' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none; cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary {
+    background: var(--brand); color: white;
+  }
+  .btn-primary:hover { background: var(--brand-dark); }
+  .btn-secondary {
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-full { width: 100%; justify-content: center; padding: 13px; font-size: 15px; margin-top: 1rem; }
+
+  /* ===== STATUS BADGE ===== */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 99px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .badge-pendiente { background: var(--warning-bg); color: var(--warning); }
+  .badge-proceso { background: var(--info-bg); color: var(--info); }
+  .badge-terminado { background: var(--purple-bg); color: var(--purple); }
+  .badge-entregado { background: var(--success-bg); color: var(--success); }
+  .badge-cancelado { background: var(--danger-bg); color: var(--danger); }
+  .badge-solicitado { background: var(--warning-bg); color: var(--warning); }
+  .badge-recibido { background: var(--success-bg); color: var(--success); }
+
+  /* ===== PEDIDO CARD ===== */
+  .pedido-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 12px;
+    transition: box-shadow 0.15s;
+  }
+  .pedido-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 6px 20px rgba(0,0,0,0.06); }
+  .pedido-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .pedido-id { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+  .pedido-cliente { font-size: 17px; font-weight: 600; color: var(--text); margin-top: 2px; }
+  .pedido-producto { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .pedido-meta {
+    display: flex; gap: 1.5rem; flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 12px;
+  }
+  .meta-item { font-size: 12px; }
+  .meta-label { color: var(--text-muted); display: block; margin-bottom: 2px; }
+  .meta-value { color: var(--text); font-weight: 500; }
+  .meta-value.price { color: var(--brand); font-size: 15px; font-weight: 600; }
+  .pedido-actions {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  select.estado-select {
+    font-size: 12px;
+    padding: 6px 28px 6px 10px;
+    border-radius: 99px;
+    background-color: var(--bg);
+    font-weight: 500;
+    width: auto;
+  }
+
+  /* ===== STATS GRID ===== */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+  .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 28px; font-weight: 600; color: var(--text); margin-top: 6px; }
+  .stat-value.money { color: var(--brand); }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ===== FILTERS ===== */
+  .filters {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .filter-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500;
+    padding: 6px 14px; border-radius: 99px;
+    border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .filter-btn.active { background: var(--brand); color: white; border-color: var(--brand); }
+  .filter-btn:hover:not(.active) { background: var(--bg); color: var(--text); }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-muted);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+  .empty-state p { font-size: 14px; }
+
+  /* ===== ALERT ===== */
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .alert-success { background: var(--success-bg); color: var(--success); }
+  .alert-error { background: var(--danger-bg); color: var(--danger); }
+  .alert-info { background: var(--info-bg); color: var(--info); }
+
+  /* ===== LOADING ===== */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(0,0,0,0.1);
+    border-top-color: var(--brand);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== CONFIG BANNER ===== */
+  .config-banner {
+    background: var(--warning-bg);
+    border: 1px solid #F0D060;
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    font-size: 13px;
+    color: var(--warning);
+  }
+  .config-banner strong { display: block; margin-bottom: 4px; font-size: 14px; }
+  .config-banner code {
+    background: rgba(139,94,0,0.12);
+    padding: 2px 6px; border-radius: 4px;
+    font-family: monospace; font-size: 12px;
+  }
+  .url-input-row { display: flex; gap: 8px; margin-top: 10px; }
+  .url-input-row input { flex: 1; font-size: 12px; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 640px) {
+    main { padding: 1rem; }
+    .form-grid, .form-grid.cols-3 { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .pedido-header { flex-direction: column; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      Creaciones Normita
+      <span>Gestor de Pedidos</span>
+    </div>
+    <div class="sync-status">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncText">Sin conexión</span>
+      <button class="btn btn-secondary btn-sm" onclick="cargarDatos()" style="margin-left: 4px;">↻ Sincronizar</button>
+    </div>
+  </div>
+</header>
+
+<div class="nav-tabs">
+  <div class="nav-tabs-inner">
+    <button class="tab-btn active" onclick="mostrarTab('nuevo-pedido', this)">+ Nuevo Pedido</button>
+    <button class="tab-btn" onclick="mostrarTab('mis-pedidos', this)">
+      Pedidos Clientes <span class="count" id="countPedidos">0</span>
+    </button>
+    <button class="tab-btn" onclick="mostrarTab('proveedores', this)">
+      Pedidos Proveedores <span class="count" id="countProveedores">0</span>
+    </button>
+    <button class="tab-btn" onclick="mostrarTab('resumen', this)">Resumen</button>
+    <button class="tab-btn" onclick="mostrarTab('configuracion', this)">⚙ Config</button>
+  </div>
 </div>
+
+<main>
+
+  <!-- =============== TAB: NUEVO PEDIDO =============== -->
+  <div id="tab-nuevo-pedido" class="tab-panel active">
+    <div id="alertNuevoPedido"></div>
+
+    <!-- PEDIDO A CLIENTE -->
+    <div class="card">
+      <div class="card-title">📦 Crear pedido de cliente</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nombre del cliente *</label>
+          <input type="text" id="nc_cliente" placeholder="Ej: Tienda Central">
+        </div>
+        <div class="form-group">
+          <label>Email del cliente</label>
+          <input type="email" id="nc_email" placeholder="cliente@example.com">
+        </div>
+        <div class="form-group">
+          <label>Nombre del producto *</label>
+          <input type="text" id="nc_producto" placeholder="Ej: Vestido de fiesta rojo">
+        </div>
+        <div class="form-group">
+          <label>Descripción / detalles</label>
+          <input type="text" id="nc_descripcion" placeholder="Talla, color, tela...">
+        </div>
+      </div>
+      <div class="form-grid cols-3" style="margin-top: 1rem;">
+        <div class="form-group">
+          <label>Cantidad *</label>
+          <input type="number" id="nc_cantidad" value="1" min="1">
+        </div>
+        <div class="form-group">
+          <label>Precio unitario ($)</label>
+          <input type="number" id="nc_precio" placeholder="0.00" step="0.01" oninput="calcularTotal()">
+        </div>
+        <div class="form-group">
+          <label>Total estimado</label>
+          <input type="text" id="nc_total" readonly placeholder="$0.00" style="background: var(--brand-light); font-weight: 600; color: var(--brand-dark);">
+        </div>
+        <div class="form-group">
+          <label>Fecha de entrega</label>
+          <input type="date" id="nc_fecha">
+        </div>
+        <div class="form-group">
+          <label>Anticipo recibido ($)</label>
+          <input type="number" id="nc_anticipo" placeholder="0.00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Teléfono cliente</label>
+          <input type="text" id="nc_telefono" placeholder="7777-8888">
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top: 1rem;">
+        <div class="form-group full">
+          <label>Notas especiales</label>
+          <textarea id="nc_notas" placeholder="Instrucciones de confección, colores específicos, medidas, referencias..."></textarea>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="crearPedidoCliente()">
+        Crear pedido de cliente
+      </button>
+    </div>
+
+    <!-- PEDIDO A PROVEEDOR -->
+    <div class="card">
+      <div class="card-title">🏭 Crear orden de compra a proveedor</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nombre del proveedor *</label>
+          <input type="text" id="np_proveedor" placeholder="Ej: Telas Santa Ana">
+        </div>
+        <div class="form-group">
+          <label>Contacto / teléfono</label>
+          <input type="text" id="np_contacto" placeholder="7777-8888 o nombre">
+        </div>
+        <div class="form-group">
+          <label>Producto / material *</label>
+          <input type="text" id="np_producto" placeholder="Ej: Tela chiffon rojo, 3m">
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <input type="text" id="np_descripcion" placeholder="Color, referencia, calidad...">
+        </div>
+      </div>
+      <div class="form-grid cols-3" style="margin-top: 1rem;">
+        <div class="form-group">
+          <label>Cantidad *</label>
+          <input type="number" id="np_cantidad" value="1" min="1" oninput="calcularTotalProv()">
+        </div>
+        <div class="form-group">
+          <label>Costo unitario ($)</label>
+          <input type="number" id="np_costo" placeholder="0.00" step="0.01" oninput="calcularTotalProv()">
+        </div>
+        <div class="form-group">
+          <label>Total</label>
+          <input type="text" id="np_total" readonly placeholder="$0.00" style="background: var(--brand-light); font-weight: 600; color: var(--brand-dark);">
+        </div>
+        <div class="form-group">
+          <label>Fecha esperada de entrega</label>
+          <input type="date" id="np_fecha">
+        </div>
+        <div class="form-group">
+          <label>Relacionado con pedido cliente</label>
+          <input type="text" id="np_relacion" placeholder="Ej: PED-001 o nombre cliente">
+        </div>
+        <div class="form-group">
+          <label>Forma de pago</label>
+          <select id="np_pago">
+            <option>Efectivo</option>
+            <option>Transferencia</option>
+            <option>Crédito</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top: 1rem;">
+        <div class="form-group full">
+          <label>Notas adicionales</label>
+          <textarea id="np_notas" placeholder="Detalles del pedido, condiciones, especificaciones..."></textarea>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" style="background: var(--text);" onclick="crearPedidoProveedor()">
+        Crear orden de compra
+      </button>
+    </div>
+  </div>
+
+  <!-- =============== TAB: PEDIDOS CLIENTES =============== -->
+  <div id="tab-mis-pedidos" class="tab-panel">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Pedidos de clientes</div>
+        <div class="section-sub">Gestiona el estado de cada pedido</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="cargarDatos()">↻ Actualizar</button>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" onclick="filtrarPedidos('todos', this)">Todos</button>
+      <button class="filter-btn" onclick="filtrarPedidos('Pendiente', this)">Pendiente</button>
+      <button class="filter-btn" onclick="filtrarPedidos('En proceso', this)">En proceso</button>
+      <button class="filter-btn" onclick="filtrarPedidos('Terminado', this)">Terminado</button>
+      <button class="filter-btn" onclick="filtrarPedidos('Entregado', this)">Entregado</button>
+      <button class="filter-btn" onclick="filtrarPedidos('Cancelado', this)">Cancelado</button>
+    </div>
+
+    <div id="listaPedidos">
+      <div class="empty-state"><div class="icon">📋</div><p>Cargando pedidos...</p></div>
+    </div>
+  </div>
+
+  <!-- =============== TAB: PROVEEDORES =============== -->
+  <div id="tab-proveedores" class="tab-panel">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Órdenes de compra</div>
+        <div class="section-sub">Pedidos realizados a proveedores</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="cargarDatos()">↻ Actualizar</button>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" onclick="filtrarProveedores('todos', this)">Todos</button>
+      <button class="filter-btn" onclick="filtrarProveedores('Solicitado', this)">Solicitado</button>
+      <button class="filter-btn" onclick="filtrarProveedores('En tránsito', this)">En tránsito</button>
+      <button class="filter-btn" onclick="filtrarProveedores('Recibido', this)">Recibido</button>
+      <button class="filter-btn" onclick="filtrarProveedores('Cancelado', this)">Cancelado</button>
+    </div>
+
+    <div id="listaProveedores">
+      <div class="empty-state"><div class="icon">🏭</div><p>Cargando órdenes...</p></div>
+    </div>
+  </div>
+
+  <!-- =============== TAB: RESUMEN =============== -->
+  <div id="tab-resumen" class="tab-panel">
+    <div class="section-header">
+      <div class="section-title">Resumen general</div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-label">Total pedidos</div><div class="stat-value" id="st-total">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pendientes</div><div class="stat-value" id="st-pendientes">—</div></div>
+      <div class="stat-card"><div class="stat-label">En proceso</div><div class="stat-value" id="st-proceso">—</div></div>
+      <div class="stat-card"><div class="stat-label">Entregados</div><div class="stat-value" id="st-entregados">—</div></div>
+      <div class="stat-card"><div class="stat-label">Ingresos totales</div><div class="stat-value money" id="st-ingresos">—</div><div class="stat-sub">Suma de pedidos clientes</div></div>
+      <div class="stat-card"><div class="stat-label">Costos proveedores</div><div class="stat-value money" id="st-costos" style="color: var(--danger);">—</div><div class="stat-sub">Suma de órdenes de compra</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Estado detallado de pedidos</div>
+      <div id="resumenDetalle">
+        <div class="empty-state"><p>Cargando...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============== TAB: CONFIGURACIÓN =============== -->
+  <div id="tab-configuracion" class="tab-panel">
+    <div class="section-header">
+      <div class="section-title">Configuración</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔗 Conexión con Google Sheets</div>
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.6;">
+        Para sincronizar con Google Sheets, necesitas publicar un Google Apps Script como Web App.
+        Una vez publicado, pega aquí la URL del script.
+      </p>
+
+      <div class="alert alert-info" style="margin-bottom: 1rem;">
+        <strong style="font-size: 14px;">Pasos para conectar:</strong>
+        <ol style="margin-top: 8px; padding-left: 18px; line-height: 2;">
+          <li>En tu Google Sheet: <strong>Extensiones → Apps Script</strong></li>
+          <li>Pega el código del archivo <code>Code.gs</code> que te di</li>
+          <li>Haz clic en <strong>Implementar → Nueva implementación</strong></li>
+          <li>Tipo: <strong>App web</strong> · Quién accede: <strong>Cualquier persona</strong></li>
+          <li>Copia la URL que aparece y pégala abajo</li>
+        </ol>
+      </div>
+
+      <div class="form-group">
+        <label>URL del Google Apps Script</label>
+        <div class="url-input-row">
+          <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/...../exec">
+          <button class="btn btn-primary" onclick="guardarUrl()">Guardar y conectar</button>
+        </div>
+      </div>
+
+      <div id="testResult" style="margin-top: 1rem;"></div>
+
+      <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border);">
+        <div class="card-title" style="margin-bottom: 1rem;">📝 Modo sin conexión (local)</div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+          Si no tienes conexión con Google Sheets, los pedidos se guardan en tu navegador (localStorage).
+          Los datos se mantienen aunque cierres la pestaña, pero solo en este dispositivo.
+        </p>
+        <button class="btn btn-secondary btn-sm" onclick="exportarCSV()">⬇ Exportar pedidos a CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="limpiarDatosLocales()" style="margin-left: 8px; color: var(--danger);">🗑 Limpiar datos locales</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// =============================================
+// ESTADO GLOBAL
+// =============================================
+let pedidos = [];
+let proveedores = [];
+let filtroActual = 'todos';
+let filtroProvActual = 'todos';
+let SCRIPT_URL = localStorage.getItem('normita_script_url') || '';
+
+// =============================================
+// INIT
+// =============================================
+document.addEventListener('DOMContentLoaded', () => {
+  if (SCRIPT_URL) {
+    document.getElementById('scriptUrl').value = SCRIPT_URL;
+  }
+  cargarDatos();
+});
+
+// =============================================
+// TABS
+// =============================================
+function mostrarTab(tabId, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  btn.classList.add('active');
+
+  if (tabId === 'resumen') actualizarResumen();
+}
+
+// =============================================
+// CÁLCULOS
+// =============================================
+function calcularTotal() {
+  const cant = parseFloat(document.getElementById('nc_cantidad').value) || 0;
+  const precio = parseFloat(document.getElementById('nc_precio').value) || 0;
+  document.getElementById('nc_total').value = '$' + (cant * precio).toFixed(2);
+}
+function calcularTotalProv() {
+  const cant = parseFloat(document.getElementById('np_cantidad').value) || 0;
+  const costo = parseFloat(document.getElementById('np_costo').value) || 0;
+  document.getElementById('np_total').value = '$' + (cant * costo).toFixed(2);
+}
+
+// =============================================
+// CARGAR DATOS
+// =============================================
+async function cargarDatos() {
+  setSyncStatus('loading');
+  if (SCRIPT_URL) {
+    try {
+      const [resPedidos, resProv] = await Promise.all([
+        fetch(SCRIPT_URL + '?action=getPedidos'),
+        fetch(SCRIPT_URL + '?action=getProveedores')
+      ]);
+      const dataPedidos = await resPedidos.json();
+      const dataProv = await resProv.json();
+
+      if (dataPedidos.pedidos) pedidos = dataPedidos.pedidos;
+      if (dataProv.proveedores) proveedores = dataProv.proveedores;
+
+      // Guardar local como backup
+      localStorage.setItem('normita_pedidos', JSON.stringify(pedidos));
+      localStorage.setItem('normita_proveedores', JSON.stringify(proveedores));
+      setSyncStatus('connected');
+    } catch (e) {
+      console.warn('Error cargando de Sheets, usando local:', e);
+      cargarLocal();
+      setSyncStatus('error');
+    }
+  } else {
+    cargarLocal();
+    setSyncStatus('error');
+  }
+  renderPedidos();
+  renderProveedores();
+  actualizarContadores();
+}
+
+function cargarLocal() {
+  pedidos = JSON.parse(localStorage.getItem('normita_pedidos') || '[]');
+  proveedores = JSON.parse(localStorage.getItem('normita_proveedores') || '[]');
+}
+
+function setSyncStatus(estado) {
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  if (estado === 'connected') { dot.className = 'sync-dot connected'; text.textContent = 'Conectado · Sheets'; }
+  else if (estado === 'error') { dot.className = 'sync-dot error'; text.textContent = 'Sin conexión · Local'; }
+  else { dot.className = 'sync-dot'; text.textContent = 'Sincronizando...'; }
+}
+
+// =============================================
+// CREAR PEDIDO CLIENTE
+// =============================================
+async function crearPedidoCliente() {
+  const cliente = document.getElementById('nc_cliente').value.trim();
+  const producto = document.getElementById('nc_producto').value.trim();
+  if (!cliente || !producto) { mostrarAlerta('alertNuevoPedido', 'Por favor ingresa el nombre del cliente y el producto.', 'error'); return; }
+
+  const pedido = {
+    cliente,
+    emailCliente: document.getElementById('nc_email').value,
+    producto,
+    descripcion: document.getElementById('nc_descripcion').value,
+    cantidad: document.getElementById('nc_cantidad').value || 1,
+    precioUnitario: document.getElementById('nc_precio').value || 0,
+    fechaEntrega: document.getElementById('nc_fecha').value,
+    notas: document.getElementById('nc_notas').value,
+    anticipo: document.getElementById('nc_anticipo').value || 0,
+    telefono: document.getElementById('nc_telefono').value,
+    estado: 'Pendiente'
+  };
+
+  const total = parseFloat(pedido.cantidad) * parseFloat(pedido.precioUnitario);
+  pedido.total = total.toFixed(2);
+  pedido.fechaCreacion = new Date().toLocaleString('es-SV');
+  pedido.id = 'PED-' + Date.now();
+  pedido.ultimaActualizacion = pedido.fechaCreacion;
+
+  // Guardar local
+  pedidos.unshift(pedido);
+  localStorage.setItem('normita_pedidos', JSON.stringify(pedidos));
+
+  // Enviar a Sheets
+  if (SCRIPT_URL) {
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'crearPedido', pedido })
+      });
+    } catch(e) { console.warn('No se pudo sincronizar con Sheets'); }
+  }
+
+  mostrarAlerta('alertNuevoPedido', '✓ Pedido creado correctamente: ' + pedido.id, 'success');
+  limpiarFormCliente();
+  actualizarContadores();
+}
+
+// =============================================
+// CREAR PEDIDO PROVEEDOR
+// =============================================
+async function crearPedidoProveedor() {
+  const proveedor = document.getElementById('np_proveedor').value.trim();
+  const producto = document.getElementById('np_producto').value.trim();
+  if (!proveedor || !producto) { mostrarAlerta('alertNuevoPedido', 'Por favor ingresa el nombre del proveedor y el producto.', 'error'); return; }
+
+  const orden = {
+    proveedor,
+    contactoProveedor: document.getElementById('np_contacto').value,
+    producto,
+    descripcion: document.getElementById('np_descripcion').value,
+    cantidad: document.getElementById('np_cantidad').value || 1,
+    costoUnitario: document.getElementById('np_costo').value || 0,
+    fechaEsperada: document.getElementById('np_fecha').value,
+    paraPedidoCliente: document.getElementById('np_relacion').value,
+    formaPago: document.getElementById('np_pago').value,
+    notas: document.getElementById('np_notas').value,
+    estado: 'Solicitado'
+  };
+
+  const total = parseFloat(orden.cantidad) * parseFloat(orden.costoUnitario);
+  orden.total = total.toFixed(2);
+  orden.fechaCreacion = new Date().toLocaleString('es-SV');
+  orden.id = 'PROV-' + Date.now();
+  orden.ultimaActualizacion = orden.fechaCreacion;
+
+  proveedores.unshift(orden);
+  localStorage.setItem('normita_proveedores', JSON.stringify(proveedores));
+
+  if (SCRIPT_URL) {
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'crearProveedor', pedido: orden })
+      });
+    } catch(e) { console.warn('No se pudo sincronizar con Sheets'); }
+  }
+
+  mostrarAlerta('alertNuevoPedido', '✓ Orden de compra creada: ' + orden.id, 'success');
+  limpiarFormProveedor();
+  actualizarContadores();
+}
+
+// =============================================
+// RENDER PEDIDOS
+// =============================================
+function renderPedidos() {
+  const lista = document.getElementById('listaPedidos');
+  let filtrados = filtroActual === 'todos' ? pedidos : pedidos.filter(p => (p['Estado'] || p.estado) === filtroActual);
+
+  if (filtrados.length === 0) {
+    lista.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>${filtroActual === 'todos' ? 'No hay pedidos aún. ¡Crea tu primer pedido!' : 'No hay pedidos con este estado.'}</p></div>`;
+    return;
+  }
+
+  lista.innerHTML = filtrados.map(p => {
+    const id = p['ID'] || p.id || '';
+    const cliente = p['Nombre del cliente'] || p['Cliente'] || p.cliente || '';
+    const producto = p['Nombre del producto'] || p['Producto'] || p.producto || '';
+    const estado = p['Estado'] || p.estado || 'Pendiente';
+    const total = p['Total'] || p.total || '0.00';
+    const fecha = p['Fecha Entrega'] || p['Fecha vencimiento'] || p.fechaEntrega || '';
+    const notas = p['Notas Especiales'] || p.notas || '';
+    const creado = p['Fecha Creación'] || p.fechaCreacion || '';
+
+    return `
+    <div class="pedido-card">
+      <div class="pedido-header">
+        <div>
+          <div class="pedido-id">${id} · ${creado}</div>
+          <div class="pedido-cliente">${cliente}</div>
+          <div class="pedido-producto">${producto}</div>
+        </div>
+        <span class="badge badge-${estadoClass(estado)}">${estado}</span>
+      </div>
+      ${notas ? `<div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; padding: 6px 10px; background: var(--bg); border-radius: 6px;">${notas}</div>` : ''}
+      <div class="pedido-meta">
+        <div class="meta-item"><span class="meta-label">Total</span><span class="meta-value price">$${parseFloat(total).toFixed(2)}</span></div>
+        ${fecha ? `<div class="meta-item"><span class="meta-label">Entrega</span><span class="meta-value">${fecha}</span></div>` : ''}
+      </div>
+      <div class="pedido-actions">
+        <label style="font-size: 12px; color: var(--text-muted);">Cambiar estado:</label>
+        <select class="estado-select" onchange="actualizarEstado('${id}', this.value, 'cliente')">
+          <option ${estado==='Pendiente'?'selected':''}>Pendiente</option>
+          <option ${estado==='En proceso'?'selected':''}>En proceso</option>
+          <option ${estado==='Terminado'?'selected':''}>Terminado</option>
+          <option ${estado==='Entregado'?'selected':''}>Entregado</option>
+          <option ${estado==='Cancelado'?'selected':''}>Cancelado</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="eliminarPedido('${id}', 'cliente')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderProveedores() {
+  const lista = document.getElementById('listaProveedores');
+  let filtrados = filtroProvActual === 'todos' ? proveedores : proveedores.filter(p => (p['Estado'] || p.estado) === filtroProvActual);
+
+  if (filtrados.length === 0) {
+    lista.innerHTML = `<div class="empty-state"><div class="icon">🏭</div><p>${filtroProvActual === 'todos' ? 'No hay órdenes de compra aún.' : 'No hay órdenes con este estado.'}</p></div>`;
+    return;
+  }
+
+  lista.innerHTML = filtrados.map(p => {
+    const id = p['ID'] || p.id || '';
+    const proveedor = p['Proveedor'] || p.proveedor || '';
+    const producto = p['Producto'] || p.producto || '';
+    const estado = p['Estado'] || p.estado || 'Solicitado';
+    const total = p['Total'] || p.total || '0.00';
+    const fecha = p['Fecha Esperada'] || p.fechaEsperada || '';
+    const relacion = p['Para Pedido Cliente'] || p.paraPedidoCliente || '';
+    const creado = p['Fecha Creación'] || p.fechaCreacion || '';
+
+    return `
+    <div class="pedido-card">
+      <div class="pedido-header">
+        <div>
+          <div class="pedido-id">${id} · ${creado}</div>
+          <div class="pedido-cliente">${proveedor}</div>
+          <div class="pedido-producto">${producto}</div>
+        </div>
+        <span class="badge badge-${estadoClass(estado)}">${estado}</span>
+      </div>
+      <div class="pedido-meta">
+        <div class="meta-item"><span class="meta-label">Total costo</span><span class="meta-value price" style="color:var(--danger);">$${parseFloat(total).toFixed(2)}</span></div>
+        ${fecha ? `<div class="meta-item"><span class="meta-label">Esperado</span><span class="meta-value">${fecha}</span></div>` : ''}
+        ${relacion ? `<div class="meta-item"><span class="meta-label">Para pedido</span><span class="meta-value">${relacion}</span></div>` : ''}
+      </div>
+      <div class="pedido-actions">
+        <label style="font-size: 12px; color: var(--text-muted);">Cambiar estado:</label>
+        <select class="estado-select" onchange="actualizarEstado('${id}', this.value, 'proveedor')">
+          <option ${estado==='Solicitado'?'selected':''}>Solicitado</option>
+          <option ${estado==='En tránsito'?'selected':''}>En tránsito</option>
+          <option ${estado==='Recibido'?'selected':''}>Recibido</option>
+          <option ${estado==='Cancelado'?'selected':''}>Cancelado</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="eliminarPedido('${id}', 'proveedor')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function estadoClass(estado) {
+  const map = {
+    'Pendiente': 'pendiente', 'En proceso': 'proceso',
+    'Terminado': 'terminado', 'Entregado': 'entregado',
+    'Cancelado': 'cancelado', 'Solicitado': 'solicitado',
+    'En tránsito': 'proceso', 'Recibido': 'recibido'
+  };
+  return map[estado] || 'pendiente';
+}
+
+// =============================================
+// FILTROS
+// =============================================
+function filtrarPedidos(estado, btn) {
+  filtroActual = estado;
+  document.querySelectorAll('#tab-mis-pedidos .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPedidos();
+}
+function filtrarProveedores(estado, btn) {
+  filtroProvActual = estado;
+  document.querySelectorAll('#tab-proveedores .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProveedores();
+}
+
+// =============================================
+// ACTUALIZAR ESTADO
+// =============================================
+async function actualizarEstado(id, nuevoEstado, tipo) {
+  const lista = tipo === 'proveedor' ? proveedores : pedidos;
+  const item = lista.find(p => (p['ID'] || p.id) === id);
+  if (item) {
+    if (item['Estado'] !== undefined) item['Estado'] = nuevoEstado;
+    else item.estado = nuevoEstado;
+    item.ultimaActualizacion = new Date().toLocaleString('es-SV');
+  }
+
+  localStorage.setItem('normita_pedidos', JSON.stringify(pedidos));
+  localStorage.setItem('normita_proveedores', JSON.stringify(proveedores));
+
+  if (SCRIPT_URL) {
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'actualizarEstado', id, estado: nuevoEstado, tipo })
+      });
+    } catch(e) {}
+  }
+
+  actualizarContadores();
+  if (tipo === 'proveedor') renderProveedores();
+  else renderPedidos();
+}
+
+// =============================================
+// ELIMINAR
+// =============================================
+async function eliminarPedido(id, tipo) {
+  if (!confirm('¿Estás segura de que quieres eliminar este pedido?')) return;
+
+  if (tipo === 'proveedor') {
+    proveedores = proveedores.filter(p => (p['ID'] || p.id) !== id);
+    localStorage.setItem('normita_proveedores', JSON.stringify(proveedores));
+    renderProveedores();
+  } else {
+    pedidos = pedidos.filter(p => (p['ID'] || p.id) !== id);
+    localStorage.setItem('normita_pedidos', JSON.stringify(pedidos));
+    renderPedidos();
+  }
+
+  if (SCRIPT_URL) {
+    try {
+      await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'eliminarPedido', id, tipo }) });
+    } catch(e) {}
+  }
+
+  actualizarContadores();
+}
+
+// =============================================
+// RESUMEN
+// =============================================
+function actualizarResumen() {
+  const totalpedidos = pedidos.length;
+  const pendientes = pedidos.filter(p => (p['Estado'] || p.estado) === 'Pendiente').length;
+  const enProceso = pedidos.filter(p => (p['Estado'] || p.estado) === 'En proceso').length;
+  const entregados = pedidos.filter(p => (p['Estado'] || p.estado) === 'Entregado').length;
+
+  const ingresos = pedidos.reduce((s, p) => s + (parseFloat(p['Total'] || p.total) || 0), 0);
+  const costos = proveedores.reduce((s, p) => s + (parseFloat(p['Total'] || p.total) || 0), 0);
+
+  document.getElementById('st-total').textContent = totalpedidos;
+  document.getElementById('st-pendientes').textContent = pendientes;
+  document.getElementById('st-proceso').textContent = enProceso;
+  document.getElementById('st-entregados').textContent = entregados;
+  document.getElementById('st-ingresos').textContent = '$' + ingresos.toFixed(2);
+  document.getElementById('st-costos').textContent = '$' + costos.toFixed(2);
+
+  // Detalle por estado
+  const estados = {};
+  pedidos.forEach(p => {
+    const e = p['Estado'] || p.estado || 'Pendiente';
+    if (!estados[e]) estados[e] = { count: 0, total: 0 };
+    estados[e].count++;
+    estados[e].total += parseFloat(p['Total'] || p.total) || 0;
+  });
+
+  const detalle = document.getElementById('resumenDetalle');
+  if (Object.keys(estados).length === 0) {
+    detalle.innerHTML = '<div class="empty-state"><p>No hay pedidos para mostrar.</p></div>';
+    return;
+  }
+
+  detalle.innerHTML = Object.entries(estados).map(([est, data]) => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+      <span class="badge badge-${estadoClass(est)}">${est}</span>
+      <div style="text-align: right;">
+        <div style="font-weight: 600;">${data.count} pedido${data.count !== 1 ? 's' : ''}</div>
+        <div style="font-size: 12px; color: var(--text-muted);">$${data.total.toFixed(2)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// =============================================
+// CONTADORES
+// =============================================
+function actualizarContadores() {
+  document.getElementById('countPedidos').textContent = pedidos.length;
+  document.getElementById('countProveedores').textContent = proveedores.length;
+}
+
+// =============================================
+// LIMPIAR FORMULARIOS
+// =============================================
+function limpiarFormCliente() {
+  ['nc_cliente','nc_email','nc_producto','nc_descripcion','nc_precio','nc_anticipo','nc_telefono','nc_notas','nc_fecha'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('nc_cantidad').value = '1';
+  document.getElementById('nc_total').value = '';
+}
+function limpiarFormProveedor() {
+  ['np_proveedor','np_contacto','np_producto','np_descripcion','np_costo','np_relacion','np_notas','np_fecha'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('np_cantidad').value = '1';
+  document.getElementById('np_total').value = '';
+}
+
+// =============================================
+// CONFIGURACIÓN
+// =============================================
+function guardarUrl() {
+  const url = document.getElementById('scriptUrl').value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    document.getElementById('testResult').innerHTML = '<div class="alert alert-error">URL no válida. Debe comenzar con https://script.google.com</div>';
+    return;
+  }
+  SCRIPT_URL = url;
+  localStorage.setItem('normita_script_url', url);
+  document.getElementById('testResult').innerHTML = '<div class="alert alert-success">✓ URL guardada. Conectando con Google Sheets...</div>';
+  cargarDatos();
+}
+
+function exportarCSV() {
+  if (pedidos.length === 0) { alert('No hay pedidos para exportar.'); return; }
+  const headers = ['ID','Fecha','Cliente','Producto','Cantidad','Total','Estado','Fecha Entrega'];
+  const rows = pedidos.map(p => [
+    p['ID'] || p.id,
+    p['Fecha Creación'] || p.fechaCreacion,
+    p['Cliente'] || p.cliente,
+    p['Producto'] || p.producto,
+    p['Cantidad'] || p.cantidad,
+    p['Total'] || p.total,
+    p['Estado'] || p.estado,
+    p['Fecha Entrega'] || p.fechaEntrega
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(c => `"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'pedidos-normita.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function limpiarDatosLocales() {
+  if (!confirm('¿Eliminar todos los datos guardados en este dispositivo? Esto no afecta Google Sheets.')) return;
+  localStorage.removeItem('normita_pedidos');
+  localStorage.removeItem('normita_proveedores');
+  pedidos = []; proveedores = [];
+  renderPedidos(); renderProveedores(); actualizarContadores();
+  alert('Datos locales eliminados.');
+}
+
+// =============================================
+// ALERTAS
+// =============================================
+function mostrarAlerta(containerId, msg, tipo) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `<div class="alert alert-${tipo}">${msg}</div>`;
+  setTimeout(() => { el.innerHTML = ''; }, 5000);
+}
+</script>
+</body>
+</html>
