@@ -313,6 +313,25 @@
   .alert-error { background: var(--danger-bg); color: var(--danger); }
   .alert-info { background: var(--info-bg); color: var(--info); }
 
+  /* ===== ALERT GRANDE ===== */
+  .alert-grande {
+    padding: 16px 20px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 10px;
+    animation: slideIn 0.3s ease;
+  }
+  .alert-grande-success { background: var(--success-bg); color: var(--success); border: 1.5px solid #2D6A4F; }
+  .alert-grande-error { background: var(--danger-bg); color: var(--danger); border: 1.5px solid var(--danger); }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   /* ===== LOADING ===== */
   .spinner {
     width: 18px; height: 18px;
@@ -441,7 +460,7 @@
           <textarea id="nc_notas" placeholder="Instrucciones de confección, colores específicos, medidas, referencias..."></textarea>
         </div>
       </div>
-      <button class="btn btn-primary btn-full" onclick="crearPedidoCliente()">
+      <button id="btnCrearCliente" class="btn btn-primary btn-full" onclick="crearPedidoCliente()">
         Crear pedido de cliente
       </button>
     </div>
@@ -503,7 +522,7 @@
           <textarea id="np_notas" placeholder="Detalles del pedido, condiciones, especificaciones..."></textarea>
         </div>
       </div>
-      <button class="btn btn-primary btn-full" style="background: var(--text);" onclick="crearPedidoProveedor()">
+      <button id="btnCrearProveedor" class="btn btn-primary btn-full" style="background: var(--text);" onclick="crearPedidoProveedor()">
         Crear orden de compra
       </button>
     </div>
@@ -724,10 +743,24 @@ function setSyncStatus(estado) {
 // =============================================
 // CREAR PEDIDO CLIENTE
 // =============================================
+function formatearFecha(f) {
+  if (!f) return '';
+  // Limpia formato ISO como 2026-04-23T06:00:00.000Z
+  const d = new Date(f);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  return f;
+}
+
 async function crearPedidoCliente() {
   const cliente = document.getElementById('nc_cliente').value.trim();
   const producto = document.getElementById('nc_producto').value.trim();
   if (!cliente || !producto) { mostrarAlerta('alertNuevoPedido', 'Por favor ingresa el nombre del cliente y el producto.', 'error'); return; }
+
+  const btn = document.getElementById('btnCrearCliente');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
 
   const pedido = {
     cliente,
@@ -763,7 +796,11 @@ async function crearPedidoCliente() {
     } catch(e) { console.warn('No se pudo sincronizar con Sheets'); }
   }
 
-  mostrarAlerta('alertNuevoPedido', '✓ Pedido creado correctamente: ' + pedido.id, 'success');
+  const btn2 = document.getElementById('btnCrearCliente');
+  btn2.disabled = false;
+  btn2.textContent = '✓ Pedido creado';
+  setTimeout(() => { btn2.textContent = 'Crear pedido de cliente'; }, 3000);
+  mostrarAlertaGrande('alertNuevoPedido', '✓ ¡Pedido creado! ' + pedido.id + ' — ' + cliente, 'success');
   limpiarFormCliente();
   actualizarContadores();
 }
@@ -775,6 +812,10 @@ async function crearPedidoProveedor() {
   const proveedor = document.getElementById('np_proveedor').value.trim();
   const producto = document.getElementById('np_producto').value.trim();
   if (!proveedor || !producto) { mostrarAlerta('alertNuevoPedido', 'Por favor ingresa el nombre del proveedor y el producto.', 'error'); return; }
+
+  const btn = document.getElementById('btnCrearProveedor');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
 
   const orden = {
     proveedor,
@@ -808,7 +849,11 @@ async function crearPedidoProveedor() {
     } catch(e) { console.warn('No se pudo sincronizar con Sheets'); }
   }
 
-  mostrarAlerta('alertNuevoPedido', '✓ Orden de compra creada: ' + orden.id, 'success');
+  const btn2 = document.getElementById('btnCrearProveedor');
+  btn2.disabled = false;
+  btn2.textContent = '✓ Orden creada';
+  setTimeout(() => { btn2.textContent = 'Crear orden de compra'; }, 3000);
+  mostrarAlertaGrande('alertNuevoPedido', '✓ ¡Orden creada! ' + orden.id + ' — ' + proveedor, 'success');
   limpiarFormProveedor();
   actualizarContadores();
 }
@@ -831,15 +876,16 @@ function renderPedidos() {
     const producto = p['Nombre del producto'] || p['Producto'] || p.producto || '';
     const estado = p['Estado'] || p.estado || 'Pendiente';
     const total = p['Total'] || p.total || '0.00';
-    const fecha = p['Fecha Entrega'] || p['Fecha vencimiento'] || p.fechaEntrega || '';
+    const fechaEntrega = formatearFecha(p['Fecha Entrega'] || p['Fecha vencimiento'] || p.fechaEntrega || '');
     const notas = p['Notas Especiales'] || p.notas || '';
-    const creado = p['Fecha Creación'] || p.fechaCreacion || '';
+    const creado = formatearFecha(p['Fecha Creación'] || p.fechaCreacion || '');
+    const rawId = (p['Fecha Creación'] || p.fechaCreacion || '');
 
     return `
     <div class="pedido-card">
       <div class="pedido-header">
         <div>
-          <div class="pedido-id">${id} · ${creado}</div>
+          <div class="pedido-id">${id} · Creado: ${creado || rawId}</div>
           <div class="pedido-cliente">${cliente}</div>
           <div class="pedido-producto">${producto}</div>
         </div>
@@ -848,7 +894,7 @@ function renderPedidos() {
       ${notas ? `<div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; padding: 6px 10px; background: var(--bg); border-radius: 6px;">${notas}</div>` : ''}
       <div class="pedido-meta">
         <div class="meta-item"><span class="meta-label">Total</span><span class="meta-value price">$${parseFloat(total).toFixed(2)}</span></div>
-        ${fecha ? `<div class="meta-item"><span class="meta-label">Entrega</span><span class="meta-value">${fecha}</span></div>` : ''}
+        ${fechaEntrega ? `<div class="meta-item"><span class="meta-label">Fecha requerida</span><span class="meta-value">${fechaEntrega}</span></div>` : ''}
       </div>
       <div class="pedido-actions">
         <label style="font-size: 12px; color: var(--text-muted);">Cambiar estado:</label>
@@ -880,15 +926,16 @@ function renderProveedores() {
     const producto = p['Producto'] || p.producto || '';
     const estado = p['Estado'] || p.estado || 'Solicitado';
     const total = p['Total'] || p.total || '0.00';
-    const fecha = p['Fecha Esperada'] || p.fechaEsperada || '';
+    const fechaEsperada = formatearFecha(p['Fecha Esperada'] || p.fechaEsperada || '');
     const relacion = p['Para Pedido Cliente'] || p.paraPedidoCliente || '';
-    const creado = p['Fecha Creación'] || p.fechaCreacion || '';
+    const creado = formatearFecha(p['Fecha Creación'] || p.fechaCreacion || '');
+    const rawId = (p['Fecha Creación'] || p.fechaCreacion || '');
 
     return `
     <div class="pedido-card">
       <div class="pedido-header">
         <div>
-          <div class="pedido-id">${id} · ${creado}</div>
+          <div class="pedido-id">${id} · Pedido: ${creado || rawId}</div>
           <div class="pedido-cliente">${proveedor}</div>
           <div class="pedido-producto">${producto}</div>
         </div>
@@ -896,7 +943,7 @@ function renderProveedores() {
       </div>
       <div class="pedido-meta">
         <div class="meta-item"><span class="meta-label">Total costo</span><span class="meta-value price" style="color:var(--danger);">$${parseFloat(total).toFixed(2)}</span></div>
-        ${fecha ? `<div class="meta-item"><span class="meta-label">Esperado</span><span class="meta-value">${fecha}</span></div>` : ''}
+        ${fechaEsperada ? `<div class="meta-item"><span class="meta-label">Entrega requerida</span><span class="meta-value">${fechaEsperada}</span></div>` : ''}
         ${relacion ? `<div class="meta-item"><span class="meta-label">Para pedido</span><span class="meta-value">${relacion}</span></div>` : ''}
       </div>
       <div class="pedido-actions">
@@ -1117,6 +1164,13 @@ function mostrarAlerta(containerId, msg, tipo) {
   const el = document.getElementById(containerId);
   el.innerHTML = `<div class="alert alert-${tipo}">${msg}</div>`;
   setTimeout(() => { el.innerHTML = ''; }, 5000);
+}
+
+function mostrarAlertaGrande(containerId, msg, tipo) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `<div class="alert-grande alert-grande-${tipo}">${msg}</div>`;
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  setTimeout(() => { el.innerHTML = ''; }, 6000);
 }
 </script>
 </body>
